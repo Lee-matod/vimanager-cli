@@ -9,13 +9,13 @@ _**NOTE:** This is an unofficial tool that is not maintained nor run by the deve
 Python 3.8 or higher is required. To install or update it, simply run the following command depending on your operating system.
 **Windows:**
 
-```console
+```shell
 py -3 -m pip install -U git+https://github.com/Lee-matod/vimanager-cli
 ```
 
 **Linux/MacOS:**
 
-```console
+```shell
 python3 -m pip install -U git+https://github.com/Lee-matod/vimanager-cli
 ```
 

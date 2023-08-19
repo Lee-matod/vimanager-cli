@@ -61,7 +61,7 @@ with open("README.md", "r") as file:
 setup(
     name="vimanager",
     author="Lee-matod",
-    version="0.1.0",
+    version=version,
     license="MIT",
     description="An unofficial ViMusic CLI that enhances playlist management.",
     long_description=readme,
