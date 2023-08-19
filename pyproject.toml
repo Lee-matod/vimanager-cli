@@ -1,0 +1,18 @@
+[tool.black]
+line-length = 120
+
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+combine_star = true
+line_length = 120
+
+[tool.pyright]
+exclude = ["**/__pycache__", ".venv/"]
+pythonVersion = "3.8"
+typeCheckingMode = "strict"
+
+reportImportCycles = false
+
+reportCallInDefaultInitializer = "warning"
+reportUnnecessaryTypeIgnoreComment = "warning"
