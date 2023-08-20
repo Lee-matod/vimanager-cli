@@ -27,9 +27,13 @@ from __future__ import annotations
 
 import click
 import colorama
-
 from .inspector import inspect
 from .sorter import sort
+
+try:
+    import spotdl  # type: ignore
+except ImportError:
+    spotdl = None
 
 colorama.init(autoreset=True)
 
@@ -44,6 +48,10 @@ def entrypoint():
 
 entrypoint.add_command(inspect)
 entrypoint.add_command(sort)
+if spotdl is not None:
+    from .spotify import spotify
+
+    entrypoint.add_command(spotify)
 
 
 if __name__ == "__main__":
