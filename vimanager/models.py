@@ -33,12 +33,13 @@ if TYPE_CHECKING:
 
 
 class Song:
-    def __init__(self, song_id: str, /, title: str, artist: str, *, duration: str, thumbnail: str) -> None:
+    def __init__(self, song_id: str, /, title: str, artist: str, *, duration: str, thumbnail: str, liked: bool = False) -> None:
         self.id: str = song_id
         self.title: str = title
         self.artist: str = artist
         self.duration: str = duration
         self.thumbnail_url: str = thumbnail
+        self.liked: bool = liked
 
     def __repr__(self) -> str:
         return f"<Song id={self.id!r} title={self.title!r} artist={self.artist!r}>"
@@ -48,8 +49,8 @@ class Song:
 
     @classmethod
     def from_database(cls, data: Tuple[str, str, str, str, str, Optional[int], str]) -> Self:
-        song_id, title, artist, duration, thumbnail, *_ = data
-        return cls(song_id, title, artist, duration=duration, thumbnail=thumbnail)
+        song_id, title, artist, duration, thumbnail, liked_at, _ = data
+        return cls(song_id, title, artist, duration=duration, thumbnail=thumbnail, liked=bool(liked_at))
 
 
 class Playlist:
