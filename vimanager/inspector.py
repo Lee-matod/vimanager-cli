@@ -29,7 +29,7 @@ import click
 from colorama import Back, Fore, Style
 
 from .models import Playlist
-from .utils import get_connection, prompt_playlist
+from .utils import find_playlist, get_connection
 
 
 @click.command()
@@ -44,11 +44,11 @@ def inspect(playlist_db: click.File, playlist_name: Optional[str]):
     conn = get_connection(playlist_db.name)
     cursor = conn.cursor()
     try:
-        if playlist_name is not None:
-            playlist = Playlist.from_name(playlist_name, connection=conn)
-        else:
-            playlist = Playlist.from_name(prompt_playlist(cursor), connection=conn)
+        playlist = Playlist(*find_playlist(playlist_name, cursor), connection=conn)
         tracks = playlist.songs
+        if not tracks:
+            click.echo(f"{Back.RED}Playlist is empty.{Back.RESET}")
+            return
         max_artist_name = len(max([t.artist for t in tracks], key=len))
         max_song_name = len(max([t.title for t in tracks], key=len))
         index_padding = len(str(len(tracks)))
@@ -56,7 +56,8 @@ def inspect(playlist_db: click.File, playlist_name: Optional[str]):
         fmt = (
             f"  {Fore.YELLOW}{{0:{index_padding}}}. "
             f"{Fore.GREEN}{{1.artist:{max_artist_name}}}{Fore.RESET} "
-            f"{Fore.WHITE}{{1.title}}"
+            f"{Fore.WHITE}{{1.title:{max_song_name}}} "
+            f"{Fore.RED}{{1.id}}"
         )
         click.echo(f"\n{Style.BRIGHT}-*- {Fore.MAGENTA}#{playlist.id} {Fore.BLUE}{playlist.name}{Fore.RESET} -*-")
         click.echo(
@@ -66,7 +67,8 @@ def inspect(playlist_db: click.File, playlist_name: Optional[str]):
         click.echo(
             f"  {' ':{index_padding}}  "
             f"{Style.BRIGHT}{Back.BLACK}{Fore.CYAN}{'Artist':^{max_artist_name}}{Back.RESET} "
-            f"{Back.BLACK}{'Song':^{max_song_name}}{Style.RESET_ALL}"
+            f"{Back.BLACK}{'Song':^{max_song_name}}{Back.RESET} "
+            f"{Back.BLACK}{'Song ID':^11}{Style.RESET_ALL}"
         )
         click.echo("\n".join(fmt.format(idx, t) for idx, t in enumerate(tracks, start=1)))
     finally:
