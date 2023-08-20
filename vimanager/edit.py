@@ -35,8 +35,15 @@ from .utils import find_playlist, get_connection
 @click.command()
 @click.argument("playlist_db", type=click.File("rb"))
 @click.argument("new_name", nargs=-1)
-@click.option("--playlist", "playlist_name")
+@click.option("--playlist", "playlist_name", help="The name of the playlist that will be renamed.")
 def rename(playlist_db: click.File, new_name: Tuple[str, ...], playlist_name: Optional[str]) -> None:
+    """Rename a playlist.
+
+    If no playlist names are given, then it will open the database and output
+    all playlists found, prompting a selection.
+
+    This action cannot be undone.
+    """
     conn = get_connection(playlist_db.name)
     cursor = conn.cursor()
     try:
@@ -63,6 +70,13 @@ def rename(playlist_db: click.File, new_name: Tuple[str, ...], playlist_name: Op
 @click.argument("playlist_db", type=click.File("rb"))
 @click.argument("playlist_name", required=False)
 def delete(playlist_db: click.File, playlist_name: Optional[str]) -> None:
+    """Delete a playlist.
+
+    If no playlist names are given, then it will open the database and output
+    all playlists found, prompting a selection.
+
+    This action cannot be undone.
+    """
     conn = get_connection(playlist_db.name)
     cursor = conn.cursor()
     try:

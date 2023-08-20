@@ -40,8 +40,18 @@ if TYPE_CHECKING:
 @click.command()
 @click.argument("playlist_db", type=click.File("rb"))
 @click.argument("playlist_name", required=False)
-@click.option("--order-by", type=click.Choice(("artist", "duration", "title"), case_sensitive=False), default="title")
-@click.option("--sorting", type=click.Choice(("ASC", "DEC"), case_sensitive=False), default="DEC")
+@click.option(
+    "--order-by",
+    type=click.Choice(("artist", "duration", "title"), case_sensitive=False),
+    default="title",
+    help="How the playlist should be sorted.",
+)
+@click.option(
+    "--sorting",
+    type=click.Choice(("ASC", "DEC"), case_sensitive=False),
+    default="DEC",
+    help="The type of sorting to use: ascending or decending.",
+)
 def sort(
     playlist_db: click.File,
     playlist_name: Optional[str],

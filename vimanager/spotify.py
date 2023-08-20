@@ -40,9 +40,13 @@ _SPOTIFY_PLAYLIST_URL = re.compile(r"https?://open.spotify.com/playlist/(?P<id>[
 @click.command()
 @click.argument("playlist_db", type=click.File("rb"))
 @click.argument("playlist_url")
-@click.option("--client-id")
-@click.option("--client-secret")
-@click.option("--config", type=click.File("rb"))
+@click.option("--client-id", help="Your Spotify client ID.")
+@click.option("--client-secret", help="Your Spotify client secret.")
+@click.option(
+    "--config",
+    type=click.File("rb"),
+    help="The name of the configuration file where your client ID and secret are stored.",
+)
 def spotify(
     playlist_db: click.File,
     playlist_url: str,
@@ -51,6 +55,15 @@ def spotify(
     client_secret: Optional[str],
     config: Optional[click.File],
 ):
+    """Copy a Spotify playlist and add it to your list.
+
+    This requires a Spotify client ID and secret. For more information, see
+    https://developer.spotify.com/documentation/web-api/concepts/apps.
+
+    If provided with a config file, it should be JSON where the key that points to
+    the client ID is named 'client_id', and the key that points to the client secret
+    is named 'client_secret'.
+    """
     matched = _SPOTIFY_PLAYLIST_URL.fullmatch(playlist_url.split("?")[0])
     if not matched:
         raise click.ClickException("invalid Spotify playlist URL")

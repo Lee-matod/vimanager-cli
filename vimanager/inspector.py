@@ -36,7 +36,7 @@ from .utils import find_playlist, get_connection
 @click.argument("playlist_db", type=click.File("rb"))
 @click.argument("playlist_name", required=False)
 def inspect(playlist_db: click.File, playlist_name: Optional[str]):
-    """Inspect a ViMusic playlist from its backup database.
+    """Inspect a playlist.
 
     If no playlist names are given, then it will open the database and output
     all playlists found, prompting a selection.
