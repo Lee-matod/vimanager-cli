@@ -28,8 +28,6 @@ from __future__ import annotations
 import sqlite3
 from typing import TYPE_CHECKING, List, Optional, Tuple
 
-import click
-
 if TYPE_CHECKING:
     from typing_extensions import Self
 
@@ -79,20 +77,6 @@ class Playlist:
                 self._tracks.append(Song.from_database(data))
         finally:
             cursor.close()
-
-    @classmethod
-    def from_name(cls, name: str, /, *, connection: sqlite3.Connection) -> Self:
-        cursor = connection.cursor()
-        try:
-            cursor.execute("SELECT id FROM Playlist WHERE name=?", (name,))
-        except Exception as exc:
-            cursor.close()
-            raise click.ClickException(f"could not find playlist {name!r}: {exc}")
-        playlist_id = cursor.fetchone()
-        cursor.close()
-        if not playlist_id:
-            raise click.ClickException("playlist not found")
-        return cls(playlist_id[0], name, connection=connection)
 
     @property
     def songs(self) -> Tuple[Song]:
