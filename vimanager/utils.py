@@ -24,32 +24,37 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 import sqlite3
-from typing import List
+from typing import List, Optional, Tuple
 
 import click
 from colorama import Back, Fore, Style
 
 
-def prompt_playlist(cursor: sqlite3.Cursor, /) -> str:
-    playlist_mapping: List[str] = []
-    available_playlist = cursor.execute("SELECT name FROM Playlist").fetchall()
-    click.echo(f"{Style.BRIGHT}{Fore.WHITE}Found {len(available_playlist)} playlists:")
-    for idx, name in enumerate(available_playlist, start=1):
-        name = name[0]
-        click.echo(f"{Fore.BLACK}{idx}. {Fore.CYAN}{name}")
-        playlist_mapping.append(name)
+def find_playlist(name: Optional[str], /, cursor: sqlite3.Cursor) -> Tuple[int, str]:
+    if name is not None:
+        cursor.execute("SELECT id, name FROM Playlist WHERE name=?", (name,))
+    else:
+        cursor.execute("SELECT id, name FROM Playlist")
+    matching_playlists: List[Tuple[int, str]] = cursor.fetchall()
+    if not matching_playlists:
+        raise click.ClickException("Playlist not found")
+    if len(matching_playlists) == 1:
+        return matching_playlists[0]
+    fmt = (name or "") and " with the same name"
+    click.echo(f"{Style.BRIGHT}{Fore.WHITE}Found {len(matching_playlists)} playlists{fmt}.")
+    click.echo("\n".join(f"{Fore.BLACK}{i}. {Fore.CYAN}{n}" for i, n in matching_playlists))
     response = int(
         click.prompt(
-            f"{Back.GREEN}Choose the index of the playlist to inspect",
-            type=click.Choice(tuple(map(str, range(1, len(playlist_mapping) + 1)))),
+            f"{Back.GREEN}Select the index of the playlist",
+            type=click.Choice(tuple(map(lambda x: str(x[0]), matching_playlists))),
             show_choices=False,
         )
     )
-    return playlist_mapping[response - 1]
+    return response, [x[1] for x in matching_playlists if x[0] == response][0]
 
 
 def get_connection(db: str, /) -> sqlite3.Connection:
-    if not db[-3:] == ".db":
+    if db[-3:] != ".db":
         raise click.FileError(db, "not a valid backup database")
     try:
         conn = sqlite3.connect(db)
