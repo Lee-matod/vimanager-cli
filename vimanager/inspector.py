@@ -55,8 +55,8 @@ def inspect(playlist_db: click.File, playlist_name: Optional[str]):
 
         fmt = (
             f"  {Fore.YELLOW}{{0:{index_padding}}}. "
-            f"{Fore.GREEN}{{1.artist:{max_artist_name}}}{Fore.RESET} "
             f"{Fore.WHITE}{{1.title:{max_song_name}}} "
+            f"{Fore.GREEN}{{1.artist:{max_artist_name}}}{Fore.RESET} "
             f"{Fore.RED}{{1.id}}"
         )
         click.echo(f"\n{Style.BRIGHT}-*- {Fore.MAGENTA}#{playlist.id} {Fore.BLUE}{playlist.name}{Fore.RESET} -*-")
@@ -66,8 +66,8 @@ def inspect(playlist_db: click.File, playlist_name: Optional[str]):
         )
         click.echo(
             f"  {' ':{index_padding}}  "
-            f"{Style.BRIGHT}{Back.BLACK}{Fore.CYAN}{'Artist':^{max_artist_name}}{Back.RESET} "
-            f"{Back.BLACK}{'Song':^{max_song_name}}{Back.RESET} "
+            f"{Style.BRIGHT}{Fore.CYAN}{Back.BLACK}{'Song':^{max_song_name}}{Back.RESET} "
+            f"{Back.BLACK}{'Artist':^{max_artist_name}}{Back.RESET} "
             f"{Back.BLACK}{'Song ID':^11}{Style.RESET_ALL}"
         )
         click.echo("\n".join(fmt.format(idx, t) for idx, t in enumerate(tracks, start=1)))
