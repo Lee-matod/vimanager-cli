@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional
 import click
 import spotdl  # type: ignore
 import spotipy  # type: ignore
-from colorama import Fore, Back, Style
+from colorama import Back, Fore, Style
 
 from .utils import get_connection
 
@@ -86,7 +86,7 @@ def spotify(
             return
         tracks: List[Dict[str, Any]] = data["items"]
         while data["next"]:
-            click.echo(f"{Style.DIM}{Fore.BLUE}Received NEXT page in items data.")
+            click.echo(f"{Style.DIM}{Fore.BLUE}Received NEXT page in items data.{Style.RESET_ALL}")
             data = spotify_client.next(data)  # type: ignore
             if data is None:
                 break
@@ -103,30 +103,44 @@ def spotify(
                 continue
             url = client.get_download_urls([song])
             if url and url[0]:
-                song.download_url = url[0]
+                # We don't actually need the URL, just the ID
+                song.download_url = url[0].split("=")[1]
                 click.echo(
                     f"{Style.DIM}Found download URL for {Style.RESET_ALL}{Fore.CYAN}{song.name}{Fore.RESET}: "
-                    f"{Fore.MAGENTA}{song.download_url}{Style.RESET_ALL}"
+                    f"{Fore.MAGENTA}{url[0]}{Style.RESET_ALL}"
                 )
             else:
                 # SpotDL throws an error whenever an exception occurs, so no need to echo it
                 songs.remove(song)
+
         click.echo(
             f"Creating new playlist {Fore.BLUE}{playlist_id}{Fore.RESET} "
             f"with {Fore.RED}{len(songs)}{Fore.RESET} tracks."
         )
         cursor.execute("SELECT id FROM Playlist")
         playlist_pos = calculate_plpos([x[0] for x in cursor.fetchall()])
+
         cursor.execute("INSERT INTO Playlist VALUES (?, ?, NULL)", (playlist_pos, playlist_id))
-        for idx, song in enumerate(songs):
-            assert song and song.download_url
-            song_id = song.download_url.split("=")[1]
-            cursor.execute("INSERT INTO SongPlaylistMap VALUES (?, ?, ?)", (song_id, playlist_pos, idx))
-            minutes, seconds = divmod(song.duration // 1000, 60)
-            cursor.execute(
-                "INSERT OR IGNORE INTO Song VALUES (?, ?, ?, ?, ?, NULL, 0)",
-                (song_id, song.name, song.artist, f"{minutes}:{seconds}", song.cover_url),
-            )
+        cursor.executemany(
+            "INSERT INTO SongPlaylistMap VALUES (?, ?, ?)",
+            # This `if song` check is purely for type checkers not to complain
+            [(song.download_url, playlist_pos, idx) for idx, song in enumerate(songs) if song],
+        )
+        cursor.executemany(
+            "INSERT OR IGNORE INTO Song VALUES (?, ?, ?, ?, ?, NULL, ?)",
+            [
+                (
+                    song.download_url,
+                    song.name,
+                    song.artist,
+                    f"{(song.duration // 1000) // 60}:{(song.duration // 1000) % 60}",
+                    song.cover_url,
+                    song.duration,
+                )
+                for song in songs
+                if song  # Same as above
+            ],
+        )
         conn.commit()
         click.echo(f"{Style.BRIGHT}{Fore.GREEN}Successfully created playlist.{Style.RESET_ALL}")
     finally:

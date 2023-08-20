@@ -73,10 +73,10 @@ def sort(
         )
         if not confirm:
             raise click.Abort()
-        for idx, song in enumerate(ordered):
-            cursor.execute(
-                "UPDATE SongPlaylistMap SET position=? WHERE songId=? AND playlistId=?", (idx, song[0], playlist.id)
-            )
+        cursor.executemany(
+            "UPDATE SongPlaylistMap SET position=? WHERE songId=? AND playlistId=?",
+            [(idx, song[0], playlist.id) for idx, song in enumerate(ordered)],
+        )
         conn.commit()
         click.echo(f"{Style.BRIGHT}{Fore.GREEN}Successfully sorted playlist.{Fore.RESET}")
 
