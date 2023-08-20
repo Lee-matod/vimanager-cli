@@ -63,6 +63,8 @@ setup(
     author="Lee-matod",
     version=version,
     license="MIT",
+    url="https://github.com/Lee-matod/vimanager-cli",
+    project_urls={"Issue Tracker": "https://github.com/Lee-matod/vimanager-cli/issues"},
     description="An unofficial ViMusic CLI that enhances playlist management.",
     long_description=readme,
     long_description_content_type="text/markdown",
