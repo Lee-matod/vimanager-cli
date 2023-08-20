@@ -31,13 +31,13 @@ import click
 from colorama import Fore, Style
 
 from .models import Playlist
-from .utils import get_connection, prompt_playlist
+from .utils import find_playlist, get_connection
 
 if TYPE_CHECKING:
     from typing_extensions import Annotated
 
 
-@click.command("sort")
+@click.command()
 @click.argument("playlist_db", type=click.File("rb"))
 @click.argument("playlist_name", required=False)
 @click.option("--order-by", type=click.Choice(("artist", "duration", "title"), case_sensitive=False), default="title")
@@ -49,7 +49,7 @@ def sort(
     sorting: Annotated[Literal["ASC", "DEC"], click.Choice],
 ):
     """Sort the order of songs in a playlist by different criteria.
-    
+
     If no playlist names are given, then it will open the database and output
     all playlists found, prompting a selection.
 
@@ -58,11 +58,7 @@ def sort(
     conn = get_connection(playlist_db.name)
     cursor = conn.cursor()
     try:
-        if playlist_name is not None:
-            playlist = Playlist.from_name(playlist_name, connection=conn)
-        else:
-            playlist = Playlist.from_name(prompt_playlist(cursor), connection=conn)
-
+        playlist = Playlist(*find_playlist(playlist_name, cursor), connection=conn)
         ordered = sorted(
             ((t.id, getattr(t, order_by), getattr(t, "title")) for t in playlist.songs),
             key=lambda x: x[1:],
@@ -78,7 +74,9 @@ def sort(
         if not confirm:
             raise click.Abort()
         for idx, song in enumerate(ordered):
-            cursor.execute("UPDATE SongPlaylistMap SET position=? WHERE songId=?", (idx, song[0]))
+            cursor.execute(
+                "UPDATE SongPlaylistMap SET position=? WHERE songId=? AND playlistId=?", (idx, song[0], playlist.id)
+            )
         conn.commit()
         click.echo(f"{Style.BRIGHT}{Fore.GREEN}Successfully sorted playlist.{Fore.RESET}")
 
