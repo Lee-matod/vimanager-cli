@@ -27,6 +27,8 @@ from __future__ import annotations
 
 import click
 import colorama
+
+from .edit import delete, rename
 from .inspector import inspect
 from .sorter import sort
 
@@ -48,6 +50,8 @@ def entrypoint():
 
 entrypoint.add_command(inspect)
 entrypoint.add_command(sort)
+entrypoint.add_command(delete)
+entrypoint.add_command(rename)
 if spotdl is not None:
     from .spotify import spotify
 
