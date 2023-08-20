@@ -59,7 +59,7 @@ with open("README.md", "r") as file:
 
 
 setup(
-    name="vimanager",
+    name="vimanager-cli",
     author="Lee-matod",
     version=version,
     license="MIT",
