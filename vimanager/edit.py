@@ -88,6 +88,10 @@ def delete(playlist_db: click.File, playlist_name: Optional[str]) -> None:
         if not confirm:
             raise click.Abort()
         cursor.execute("DELETE FROM Playlist WHERE name=? AND id=?", (playlist.name, playlist.id))
+        cursor.executemany(
+            "DELETE FROM SongPlaylistMap WHERE songId=? AND playlistId=?",
+            [(song.id, playlist.id) for song in playlist.songs],
+        )
         conn.commit()
         click.echo(f"{Style.BRIGHT}{Fore.GREEN}Successfully deleted playlist.{Fore.RESET}")
     finally:
