@@ -36,10 +36,22 @@ import click
 from colorama import Fore, Style
 from rapidfuzz import fuzz
 
-from ..models import Song
+from vimanager.models import Song
 
 if TYPE_CHECKING:
     from .models import Spotify, YouTube
+
+__all__ = (
+    "add_best_match",
+    "artists_fixup",
+    "clean_string",
+    "fill_string",
+    "main_artist",
+    "other_artists",
+    "slugify",
+    "sort_strings",
+    "title",
+)
 
 FORBIDDEN_WORDS = (
     "8daudio",

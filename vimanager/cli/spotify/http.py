@@ -39,6 +39,8 @@ from .models import Spotify
 if TYPE_CHECKING:
     from typing_extensions import Self
 
+__all__ = ("SpotifyClient",)
+
 
 class SpotifyClient:
     TOKEN_CACHE: ClassVar[pathlib.Path] = pathlib.Path(".cache")

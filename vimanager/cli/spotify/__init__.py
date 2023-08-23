@@ -31,11 +31,14 @@ import click
 import ytmusicapi as ytm  # type: ignore
 from colorama import Back, Fore, Style
 
-from ..models import Song
-from ..utils import get_connection
+from vimanager.models import Song
+from vimanager.utils import get_connection
+
 from .http import SpotifyClient
 from .matching import add_best_match
 from .models import YouTube
+
+__all__ = ("spotify",)
 
 _SPOTIFY_PLAYLIST_URL = re.compile(r"https?://open.spotify.com/playlist/(?P<id>[a-zA-Z0-9]+)")
 _SPOTIFY = f"{Style.BRIGHT}{Fore.GREEN}[SPOTIFY]{Style.RESET_ALL} "

@@ -28,12 +28,10 @@ from __future__ import annotations
 import click
 import colorama
 
-from .edit import delete, rename
-from .inspector import inspect
-from .sorter import sort
+from .cli import delete, inspect, rename, sort
 
 try:
-    from . import spotify
+    from .cli import spotify
 except ImportError:
     spotify = None
 
@@ -53,7 +51,7 @@ entrypoint.add_command(sort)
 entrypoint.add_command(delete)
 entrypoint.add_command(rename)
 if spotify is not None:
-    entrypoint.add_command(spotify.spotify)
+    entrypoint.add_command(spotify)
 
 
 if __name__ == "__main__":

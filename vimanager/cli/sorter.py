@@ -30,8 +30,8 @@ from typing import TYPE_CHECKING, Literal, Optional
 import click
 from colorama import Fore, Style
 
-from .models import Playlist
-from .utils import find_playlist, get_connection
+from ..models import Playlist
+from ..utils import find_playlist, get_connection
 
 if TYPE_CHECKING:
     from typing_extensions import Annotated

@@ -73,8 +73,8 @@ setup(
     extras_require={"spotify": ["rapidfuzz", "ytmusicapi"]},
     python_requires=">=3.8.0",
     py_modules=["vimanager"],
-    packages=["vimanager", "vimanager/spotify"],
-    entry_points={"console_scripts": ["vimanager = vimanager.main:entrypoint"]},
+    packages=["vimanager", "vimanager/cli", "vimanager/cli/spotify"],
+    entry_points={"console_scripts": ["vimanager = vimanager.__main__:entrypoint"]},
     classifiers=[
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",

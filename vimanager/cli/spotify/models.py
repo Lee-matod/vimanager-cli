@@ -75,7 +75,7 @@ class YouTube:
             artists=tuple(map(lambda x: x["name"], data["artists"])),
             album=(data.get("album") or {}).get("name"),
             duration=duration,
-            song=data.get("resultType") == "song"
+            song=data.get("resultType") == "song",
         )
 
 

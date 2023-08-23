@@ -28,8 +28,8 @@ from typing import Optional, Tuple
 import click
 from colorama import Fore, Style
 
-from .models import Playlist
-from .utils import find_playlist, get_connection
+from ..models import Playlist
+from ..utils import find_playlist, get_connection
 
 
 @click.command()
