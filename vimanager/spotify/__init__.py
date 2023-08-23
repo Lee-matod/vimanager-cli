@@ -23,20 +23,19 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-import json
 import re
 import time
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import click
-import spotipy  # type: ignore
 import ytmusicapi as ytm  # type: ignore
 from colorama import Back, Fore, Style
 
 from ..models import Song
 from ..utils import get_connection
-from .matching import get_best_match
-from .models import Spotify, YouTube
+from .http import SpotifyClient
+from .matching import add_best_match
+from .models import YouTube
 
 _SPOTIFY_PLAYLIST_URL = re.compile(r"https?://open.spotify.com/playlist/(?P<id>[a-zA-Z0-9]+)")
 _SPOTIFY = f"{Style.BRIGHT}{Fore.GREEN}[SPOTIFY]{Style.RESET_ALL} "
@@ -75,102 +74,68 @@ def spotify(
         raise click.ClickException("invalid Spotify playlist URL")
     if not config and not (client_id and client_secret):
         raise click.ClickException("Spotify client ID and secret not provided")
+
     if config is not None:
-        if config.name[-5:] != ".json":
-            raise click.ClickException("expected a JSON config file with 'client_id' and 'client_secret' keys")
-        with open(config.name) as fp:
-            try:
-                data = json.load(fp)
-            except json.JSONDecodeError as exc:
-                raise click.ClickException(f"could not decode config file: {exc}")
-        try:
-            client_id = data["client_id"]
-            client_secret = data["client_secret"]
-        except KeyError as exc:
-            raise click.ClickException(f"could not locate {exc} in provided config file")
-    assert client_id and client_secret
+        spotify_client = SpotifyClient.from_config(config.name)
+    else:
+        assert client_id and client_secret
+        spotify_client = SpotifyClient(client_id, client_secret)
+
     conn = get_connection(playlist_db.name)
     cursor = conn.cursor()
     playlist_id = matched.groupdict()["id"]
     try:
-        spotify_client = spotipy.Spotify(
-            client_credentials_manager=spotipy.SpotifyClientCredentials(client_id, client_secret)
-        )
         click.echo(f"{_SPOTIFY}Looking up playlist {Fore.YELLOW}{playlist_id}{Fore.RESET}.")
-        try:
-            data = spotify_client.playlist_items(playlist_id)  # type: ignore
-        except spotipy.SpotifyException as exc:
-            raise click.ClickException(f"{_SPOTIFY}{Back.RED}Could not find playlist items: {exc}")
-        if not data:
-            click.echo(f"{_SPOTIFY}{Back.RED}Playlist is empty or not found.")
-            return
-        tracks: List[Optional[Spotify]] = [Spotify.from_data(track) for track in data["items"]]
-        while data["next"]:
-            click.echo(f"    {_SPOTIFY}{Style.DIM}{Fore.BLUE}Found NEXT page in items data.")
-            data = spotify_client.next(data)  # type: ignore
-            if data is None:
-                break
-            tracks.extend([Spotify.from_data(track) for track in data["items"]])
+        tracks = spotify_client.playlist_items(playlist_id)
+        if not tracks:
+            raise click.ClickException(f"{_SPOTIFY}{Back.RED}Playlist not found or is empty.{Back.RESET}")
         click.echo(f"{_SPOTIFY}Retrieved {Style.RESET_ALL}{Fore.RED}{len(tracks)}{Fore.RESET} tracks from playlist.")
 
-        client = ytm.YTMusic()
+        yt_client = ytm.YTMusic()
         isrc_urls: List[str] = []
         songs: List[Song] = []
         for track in tracks:
-            if track is None:
-                continue
             time.sleep(1)
-            incomplete_obj = Song(
-                "", track.name, track.artist, duration=track.duration, thumbnail=track.cover_url or ""
-            )
             click.echo(
-                f"{_YOUTUBE}Searching for {Fore.CYAN}{track.name}{Fore.RESET}"
+                f"{_SPOTIFY}Searching for {Fore.CYAN}{track.name}{Fore.RESET}"
                 f" by {Fore.YELLOW}{track.artist}{Fore.RESET}"
             )
             if track.isrc:
-                click.echo(f"    {_SPOTIFY}{Style.DIM}Track has ISRC.")
+                click.echo(f"    {_YOUTUBE}{Style.DIM}Track has ISRC. Looking it up with YouTube Music.")
                 isrc_results: List[YouTube] = [
-                    yt for yt in map(YouTube.from_data, client.search(track.isrc, "songs")) if yt  # type: ignore
+                    yt for yt in map(YouTube.from_data, yt_client.search(track.isrc, "songs")) if yt  # type: ignore
                 ]
                 isrc_urls = [result.url for result in isrc_results]
-                scores: Dict[YouTube, float] = {yt_track: track.compare(yt_track) for yt_track in isrc_results}
-                if len(scores) > 0:
-                    best_match = get_best_match(scores)
-                    if best_match is not None:
-                        incomplete_obj.id = best_match.video_id
-                        songs.append(incomplete_obj)
-                        click.echo(
-                            f"    {_YOUTUBE}Found best match:{Style.RESET_ALL} {Fore.MAGENTA}{best_match.url}{Fore.RESET}"
-                        )
-                        continue
-            if track.isrc:
-                click.echo(f"    {_SPOTIFY}{Fore.RED}Unsuccessful ISRC.{Fore.RESET}")
-            click.echo(f"{_YOUTUBE}Looking up using YouTube Music.")
+                success = add_best_match(track, isrc_results, songs)
+                if success:
+                    continue
+                click.echo(f"    {_YOUTUBE}{Fore.RED}ISRC did not match.{Fore.RESET}")
+            query = f"{', '.join(track.artists)} - {track.name}"
+            click.echo(f"{_YOUTUBE}Looking up {Fore.YELLOW}{query}{Fore.RESET} with YouTube Music.")
             results: List[YouTube] = [
-                yt
-                for yt in map(YouTube.from_data, client.search(f"{', '.join(track.artists)} - {track.name}"))  # type: ignore
-                if yt
+                yt for yt in map(YouTube.from_data, yt_client.search(query)) if yt  # type: ignore
             ]
+            click.echo(f"    {_YOUTUBE}Retrieved {Fore.RED}{len(results)}{Fore.RESET} results.")
             isrc_result = next((r for r in results if r.url in isrc_urls), None)
             if isrc_result:
-                incomplete_obj.id = isrc_result.video_id
-                songs.append(incomplete_obj)
+                songs.append(
+                    Song(
+                        isrc_result.video_id,
+                        track.name,
+                        track.artist,
+                        duration=track.duration,
+                        thumbnail=track.cover_url or "",
+                    )
+                )
                 click.echo(
-                    f"    {_SPOTIFY}{Style.DIM}Cached ISRC found:{Style.RESET_ALL} {Fore.MAGENTA}{isrc_result.url}"
+                    f"    {_SPOTIFY}{Style.DIM}One of the results had ISRC found in cache:{Style.RESET_ALL} "
+                    f"{Fore.MAGENTA}{isrc_result.url}"
                 )
                 continue
-            filtered_results = {yt_track: track.compare(yt_track) for yt_track in results}
-
-            if len(filtered_results) != 0:
-                best_match = get_best_match(filtered_results, threshold=70)
-                if best_match is not None:
-                    incomplete_obj.id = best_match.video_id
-                    songs.append(incomplete_obj)
-                    click.echo(
-                        f"    {_YOUTUBE}Found best match:{Style.RESET_ALL} {Fore.MAGENTA}{best_match.url}{Fore.RESET}"
-                    )
-                    continue
-            click.echo(f"{_YOUTUBE}{Back.RED}No match found for {track.name} - {track.artist}{Back.RESET}")
+            success = add_best_match(track, results, songs, 70)
+            if success:
+                continue
+            click.echo(f"{_YOUTUBE}{Back.RED}No match found for {query}{Back.RESET}")
         click.echo(
             f"Creating new playlist {Fore.BLUE}{playlist_id}{Fore.RESET} "
             f"with {Fore.RED}{len(songs)}{Fore.RESET} tracks."
