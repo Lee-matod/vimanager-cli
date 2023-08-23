@@ -26,7 +26,7 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 import sqlite3
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -48,6 +48,9 @@ class Song:
 
     def __str__(self) -> str:
         return f"{self.artist} - {self.title}"
+
+    def update(self, *, song_id: Optional[str] = None, **kwargs: Any) -> Self:
+        return Song(song_id or self.id, **kwargs)
 
     @classmethod
     def from_database(cls, data: Tuple[str, str, str, str, str, Optional[int], str]) -> Self:
