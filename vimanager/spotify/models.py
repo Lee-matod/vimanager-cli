@@ -152,7 +152,7 @@ class Spotify:
             album=album_meta.get("name"),
             duration=duration_text,
             duration_ms=duration_ms,
-            song_id=meta["id"],
+            song_id=track_id,
             url=meta["external_urls"]["spotify"],
             isrc=meta.get("external_ids", {}).get("isrc"),
             cover_url=cover_url,
