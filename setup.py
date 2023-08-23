@@ -70,10 +70,10 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     install_requires=requirements,
-    extras_require={"spotify": ["spotdl"]},
+    extras_require={"spotify": ["rapidfuzz", "spotipy", "ytmusicapi"]},
     python_requires=">=3.8.0",
     py_modules=["vimanager"],
-    packages=["vimanager"],
+    packages=["vimanager", "vimanager/spotify"],
     entry_points={"console_scripts": ["vimanager = vimanager.main:entrypoint"]},
     classifiers=[
         "Intended Audience :: Developers",

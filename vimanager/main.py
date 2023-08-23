@@ -33,9 +33,9 @@ from .inspector import inspect
 from .sorter import sort
 
 try:
-    import spotdl  # type: ignore
+    from . import spotify
 except ImportError:
-    spotdl = None
+    spotify = None
 
 colorama.init(autoreset=True)
 
@@ -52,10 +52,8 @@ entrypoint.add_command(inspect)
 entrypoint.add_command(sort)
 entrypoint.add_command(delete)
 entrypoint.add_command(rename)
-if spotdl is not None:
-    from .spotify import spotify
-
-    entrypoint.add_command(spotify)
+if spotify is not None:
+    entrypoint.add_command(spotify.spotify)
 
 
 if __name__ == "__main__":

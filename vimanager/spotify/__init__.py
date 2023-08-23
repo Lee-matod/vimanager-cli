@@ -25,16 +25,22 @@ DEALINGS IN THE SOFTWARE.
 """
 import json
 import re
-from typing import Any, Dict, List, Optional
+import time
+from typing import Dict, List, Optional
 
 import click
-import spotdl  # type: ignore
 import spotipy  # type: ignore
+import ytmusicapi as ytm  # type: ignore
 from colorama import Back, Fore, Style
 
-from .utils import get_connection
+from ..models import Song
+from ..utils import get_connection
+from .matching import get_best_match
+from .models import Spotify, YouTube
 
 _SPOTIFY_PLAYLIST_URL = re.compile(r"https?://open.spotify.com/playlist/(?P<id>[a-zA-Z0-9]+)")
+_SPOTIFY = f"{Style.BRIGHT}{Fore.GREEN}[SPOTIFY]{Style.RESET_ALL} "
+_YOUTUBE = f"{Style.BRIGHT}{Fore.RED}[YOUTUBE]{Style.RESET_ALL} "
 
 
 @click.command()
@@ -90,42 +96,81 @@ def spotify(
         spotify_client = spotipy.Spotify(
             client_credentials_manager=spotipy.SpotifyClientCredentials(client_id, client_secret)
         )
+        click.echo(f"{_SPOTIFY}Looking up playlist {Fore.YELLOW}{playlist_id}{Fore.RESET}.")
         try:
             data = spotify_client.playlist_items(playlist_id)  # type: ignore
         except spotipy.SpotifyException as exc:
-            raise click.ClickException(f"Could not find playlist items: {exc}")
+            raise click.ClickException(f"{_SPOTIFY}{Back.RED}Could not find playlist items: {exc}")
         if not data:
-            click.echo(f"{Back.RED}Playlist is empty or not found.")
+            click.echo(f"{_SPOTIFY}{Back.RED}Playlist is empty or not found.")
             return
-        tracks: List[Dict[str, Any]] = data["items"]
+        tracks: List[Optional[Spotify]] = [Spotify.from_data(track) for track in data["items"]]
         while data["next"]:
-            click.echo(f"{Style.DIM}{Fore.BLUE}Received NEXT page in items data.{Style.RESET_ALL}")
+            click.echo(f"    {_SPOTIFY}{Style.DIM}{Fore.BLUE}Found NEXT page in items data.")
             data = spotify_client.next(data)  # type: ignore
             if data is None:
                 break
-            tracks.extend(data["items"])
-        click.echo(
-            f"Retrieved {Style.RESET_ALL}{Fore.RED}{len(tracks)}{Fore.RESET} tracks from playlist.{Style.RESET_ALL}"
-        )
+            tracks.extend([Spotify.from_data(track) for track in data["items"]])
+        click.echo(f"{_SPOTIFY}Retrieved {Style.RESET_ALL}{Fore.RED}{len(tracks)}{Fore.RESET} tracks from playlist.")
 
-        client = spotdl.Spotdl(client_id, client_secret)
-        songs = [to_song(track_data) for track_data in tracks]
-        for song in songs.copy():
-            if not song:
-                songs.remove(song)
+        client = ytm.YTMusic()
+        isrc_urls: List[str] = []
+        songs: List[Song] = []
+        for track in tracks:
+            if track is None:
                 continue
-            url = client.get_download_urls([song])
-            if url and url[0]:
-                # We don't actually need the URL, just the ID
-                song.download_url = url[0].split("=")[1]
+            time.sleep(1)
+            incomplete_obj = Song(
+                "", track.name, track.artist, duration=track.duration, thumbnail=track.cover_url or ""
+            )
+            click.echo(
+                f"{_YOUTUBE}Searching for {Fore.CYAN}{track.name}{Fore.RESET}"
+                f" by {Fore.YELLOW}{track.artist}{Fore.RESET}"
+            )
+            if track.isrc:
+                click.echo(f"    {_SPOTIFY}{Style.DIM}Track has ISRC.")
+                isrc_results: List[YouTube] = [
+                    yt for yt in map(YouTube.from_data, client.search(track.isrc, "songs")) if yt  # type: ignore
+                ]
+                isrc_urls = [result.url for result in isrc_results]
+                scores: Dict[YouTube, float] = {yt_track: track.compare(yt_track) for yt_track in isrc_results}
+                if len(scores) > 0:
+                    best_match = get_best_match(scores)
+                    if best_match is not None:
+                        incomplete_obj.id = best_match.video_id
+                        songs.append(incomplete_obj)
+                        click.echo(
+                            f"    {_YOUTUBE}Found best match:{Style.RESET_ALL} {Fore.MAGENTA}{best_match.url}{Fore.RESET}"
+                        )
+                        continue
+            if track.isrc:
+                click.echo(f"    {_SPOTIFY}{Fore.RED}Unsuccessful ISRC.{Fore.RESET}")
+            click.echo(f"{_YOUTUBE}Looking up using YouTube Music.")
+            results: List[YouTube] = [
+                yt
+                for yt in map(YouTube.from_data, client.search(f"{', '.join(track.artists)} - {track.name}"))  # type: ignore
+                if yt
+            ]
+            isrc_result = next((r for r in results if r.url in isrc_urls), None)
+            if isrc_result:
+                incomplete_obj.id = isrc_result.video_id
+                songs.append(incomplete_obj)
                 click.echo(
-                    f"{Style.DIM}Found download URL for {Style.RESET_ALL}{Fore.CYAN}{song.name}{Fore.RESET}: "
-                    f"{Fore.MAGENTA}{url[0]}{Style.RESET_ALL}"
+                    f"    {_SPOTIFY}{Style.DIM}Cached ISRC found:{Style.RESET_ALL} {Fore.MAGENTA}{isrc_result.url}"
                 )
-            else:
-                # SpotDL throws an error whenever an exception occurs, so no need to echo it
-                songs.remove(song)
+                continue
+            filtered_results = {yt_track: track.compare(yt_track) for yt_track in results}
 
+            if len(filtered_results) != 0:
+                best_match = get_best_match(filtered_results, threshold=70)
+                if best_match is not None:
+                    incomplete_obj.id = best_match.video_id
+                    songs.append(incomplete_obj)
+                    click.echo(
+                        f"    {_YOUTUBE}Found best match:{Style.RESET_ALL} {Fore.MAGENTA}{best_match.url}{Fore.RESET}"
+                    )
+                    continue
+            click.echo(f"{_YOUTUBE}{Back.RED}No match found for {track.name} - {track.artist}{Back.RESET}")
         click.echo(
             f"Creating new playlist {Fore.BLUE}{playlist_id}{Fore.RESET} "
             f"with {Fore.RED}{len(songs)}{Fore.RESET} tracks."
@@ -136,28 +181,15 @@ def spotify(
         cursor.execute("INSERT INTO Playlist VALUES (?, ?, NULL)", (playlist_pos, playlist_id))
         cursor.executemany(
             "INSERT INTO SongPlaylistMap VALUES (?, ?, ?)",
-            # This `if song` check is purely for type checkers not to complain
-            [(song.download_url, playlist_pos, idx) for idx, song in enumerate(songs) if song],
+            [(song.id, playlist_pos, idx) for idx, song in enumerate(songs)],
         )
         cursor.executemany(
             "INSERT OR IGNORE INTO Song VALUES (?, ?, ?, ?, ?, NULL, ?)",
-            [
-                (
-                    song.download_url,
-                    song.name,
-                    song.artist,
-                    f"{(song.duration // 1000) // 60}:{(song.duration // 1000) % 60}",
-                    song.cover_url,
-                    song.duration,
-                )
-                for song in songs
-                if song  # Same as above
-            ],
+            [(song.id, song.title, song.artist, song.duration, song.thumbnail_url, song.duration) for song in songs],
         )
         conn.commit()
         click.echo(f"{Style.BRIGHT}{Fore.GREEN}Successfully created playlist.{Style.RESET_ALL}")
     finally:
-        click.echo(f"\033[?25h")  # get_download_urls hides the cursor
         cursor.close()
         conn.close()
 
@@ -167,36 +199,3 @@ def calculate_plpos(current_ids: List[int], /) -> int:
         if i not in current_ids:
             return i
     return len(current_ids) + 1
-
-
-def to_song(data: Dict[str, Any]) -> Optional[spotdl.Song]:
-    meta = data.get("track", {})
-    track_id = meta.get("id")
-    if not meta or not track_id:
-        return
-
-    album_meta = meta.get("album", {})
-    artists = [artist["name"] for artist in meta.get("artists", [])]
-    release_date = album_meta.get("release_date")
-
-    return spotdl.Song.from_missing_data(  # type: ignore
-        name=meta["name"],
-        artists=artists,
-        artist=artists[0],
-        album_id=album_meta.get("id"),
-        album_name=album_meta.get("name"),
-        album_artist=album_meta.get("artists", [])[0]["name"] if album_meta.get("artists") else None,
-        disc_number=meta["disc_number"],
-        duration=meta["duration_ms"],
-        year=release_date[:4] if release_date else None,
-        date=release_date,
-        track_number=meta["track_number"],
-        tracks_count=album_meta.get("total_tracks"),
-        song_id=meta["id"],
-        explicit=meta["explicit"],
-        url=meta["external_urls"]["spotify"],
-        isrc=meta.get("external_ids", {}).get("isrc"),
-        cover_url=max(album_meta["images"], key=lambda i: i["width"] * i["height"])["url"]
-        if (len(album_meta.get("images", [])) > 0)
-        else None,
-    )
