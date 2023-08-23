@@ -29,6 +29,8 @@ from typing import List, Optional, Tuple
 import click
 from colorama import Back, Fore, Style
 
+__all__ = ("find_playlist", "get_connection")
+
 
 def find_playlist(name: Optional[str], /, cursor: sqlite3.Cursor) -> Tuple[int, str]:
     if name is not None:

@@ -31,6 +31,8 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 if TYPE_CHECKING:
     from typing_extensions import Self
 
+__all__ = ("Playlist", "Song")
+
 
 class Song:
     def __init__(
