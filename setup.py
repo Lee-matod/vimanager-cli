@@ -70,7 +70,7 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     install_requires=requirements,
-    extras_require={"spotify": ["rapidfuzz", "spotipy", "ytmusicapi"]},
+    extras_require={"spotify": ["rapidfuzz", "ytmusicapi"]},
     python_requires=">=3.8.0",
     py_modules=["vimanager"],
     packages=["vimanager", "vimanager/spotify"],
