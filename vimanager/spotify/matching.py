@@ -30,9 +30,13 @@ import unicodedata
 from functools import lru_cache
 from html.entities import name2codepoint
 from itertools import product, zip_longest
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
+import click
+from colorama import Fore, Style
 from rapidfuzz import fuzz
+
+from ..models import Song
 
 if TYPE_CHECKING:
     from .models import Spotify, YouTube
@@ -66,12 +70,32 @@ DUPLICATE_DASH_PATTERN = re.compile(r"-{2,}")
 NUMBERS_PATTERN = re.compile(r"(?<=\d),(?=\d)")
 
 
-def get_best_match(scores: Dict[YouTube, float], /, threshold: float = 80) -> Optional[YouTube]:
-    sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    if len(sorted_scores) > 0:
-        best_match = sorted_scores[0]
-        if best_match[1] > threshold:
-            return best_match[0]
+def add_best_match(track: Spotify, scores: List[YouTube], /, tracks: List[Song], threshold: float = 80) -> bool:
+    filtered_results = {yt_track: track.compare(yt_track) for yt_track in scores}
+    if len(filtered_results) != 0:
+        sorted_scores = sorted(
+            filtered_results.items(),
+            key=lambda x: x[1] + bool(x[0].song),  # Prioritize verified songs over videos
+            reverse=True,
+        )
+        if len(sorted_scores) > 0:
+            best_match = sorted_scores[0]
+            if best_match[1] > threshold:
+                tracks.append(
+                    Song(
+                        best_match[0].video_id,
+                        track.name,
+                        track.artist,
+                        duration=track.duration,
+                        thumbnail=track.cover_url or "",
+                    )
+                )
+                click.echo(
+                    f"    {Style.BRIGHT}{Fore.RED}[YOUTUBE]{Style.RESET_ALL} "
+                    f"Found best match:{Style.RESET_ALL} {Fore.MAGENTA}{best_match[0].url}"
+                )
+                return True
+    return False
 
 
 @lru_cache
@@ -211,7 +235,9 @@ def artists_fixup(song: Spotify, result: YouTube, score: float) -> float:
             score += 5
 
     if score <= 70:
-        artist_match = fuzz.ratio(clean_string(song.artists, song_name), clean_string(list(result.artists), result_name))
+        artist_match = fuzz.ratio(
+            clean_string(song.artists, song_name), clean_string(list(result.artists), result_name)
+        )
         if artist_match > score:
             score = artist_match
     return score
