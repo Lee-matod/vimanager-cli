@@ -33,7 +33,9 @@ if TYPE_CHECKING:
 
 
 class Song:
-    def __init__(self, song_id: str, /, title: str, artist: str, *, duration: str, thumbnail: str, liked: bool = False) -> None:
+    def __init__(
+        self, song_id: str, /, title: str, artist: str, *, duration: str, thumbnail: str, liked: bool = False
+    ) -> None:
         self.id: str = song_id
         self.title: str = title
         self.artist: str = artist
