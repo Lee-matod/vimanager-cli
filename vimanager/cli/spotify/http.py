@@ -108,7 +108,7 @@ class SpotifyClient:
         token = data["access_token"]
         token_type = data["token_type"]
         expires_in = data["expires_in"] + time.time()
-        with open(".cache", "w") as fp:
+        with open(".cache", "w+") as fp:
             json.dump({"token": token, "expires_in": expires_in, "token_type": token_type}, fp)
         return f"{token_type} {token}"
 

@@ -48,8 +48,8 @@ _YOUTUBE = f"{Style.BRIGHT}{Fore.RED}[YOUTUBE]{Style.RESET_ALL} "
 @click.command()
 @click.argument("playlist_db", type=click.File("rb"))
 @click.argument("playlist_url")
-@click.option("--client-id", help="Your Spotify client ID.")
-@click.option("--client-secret", help="Your Spotify client secret.")
+@click.option("--client-id", default="5f573c9620494bae87890c0f08a60293", help="Your Spotify client ID.")
+@click.option("--client-secret", default="212476d9b0f3472eaa762d90b19b0ba8", help="Your Spotify client secret.")
 @click.option(
     "--config",
     type=click.File("rb"),
@@ -59,8 +59,8 @@ def spotify(
     playlist_db: click.File,
     playlist_url: str,
     *,
-    client_id: Optional[str],
-    client_secret: Optional[str],
+    client_id: str,
+    client_secret: str,
     config: Optional[click.File],
 ):
     """Copy a Spotify playlist and add it to your list.
