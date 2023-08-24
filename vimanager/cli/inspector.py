@@ -35,7 +35,15 @@ from ..utils import find_playlist, get_connection
 @click.command()
 @click.argument("playlist_db", type=click.File("rb"))
 @click.argument("playlist_name", required=False)
-def inspect(playlist_db: click.File, playlist_name: Optional[str]):
+@click.option(
+    "--mobile",
+    "-m",
+    help="Whether to display the output in a simplified manner for small screens.",
+    is_flag=True,
+    default=False,
+    type=bool,
+)
+def inspect(playlist_db: click.File, playlist_name: Optional[str], mobile: bool):
     """Inspect a playlist.
 
     If no playlist names are given, then it will open the database and output
@@ -52,17 +60,38 @@ def inspect(playlist_db: click.File, playlist_name: Optional[str]):
             click.echo(f"{Back.RED}Playlist is empty.{Back.RESET}")
             return
 
-        # Padding
-        max_artist_name = len(max([t.artist for t in tracks], key=len))
-        max_song_name = len(max([t.title for t in tracks], key=len))
-        index_padding = len(str(len(tracks)))
-
         # Playlist info
         click.echo(f"\n{Style.BRIGHT}-*- {Fore.MAGENTA}#{playlist.id} {Fore.BLUE}{playlist.name}{Fore.RESET} -*-")
         click.echo(
             f"Found {Style.BRIGHT}{Fore.RED}{len(tracks)}{Style.RESET_ALL} total tracks in playlist; "
             f"{Style.BRIGHT}{Fore.RED}{len(set([t.artist.lower() for t in tracks]))}{Style.RESET_ALL} unique artists.\n"
         )
+        if mobile:
+            # Padding
+            index_padding = len(str(len(tracks)))
+            # Track headers
+            click.echo(
+                f"  {' ' * index_padding}  {Style.BRIGHT}{Back.BLACK}{Fore.CYAN}"
+                f"Song - Artist [Song ID]{Style.RESET_ALL}"
+            )
+            # Track info
+            click.echo(
+                "\n".join(
+                    [
+                        f"  {Fore.YELLOW}{idx:{index_padding}}. "
+                        + (f"{Style.BRIGHT}{Fore.RED}" if track.liked else f"{Fore.WHITE}")
+                        + f"{track.title}{Style.RESET_ALL} - "
+                        + f"{Fore.GREEN}{track.artist}{Fore.RESET} "
+                        + f"{Style.DIM}[{Fore.BLUE}{track.id}{Fore.RESET}]{Style.RESET_ALL}"
+                        for idx, track in enumerate(tracks, start=1)
+                    ]
+                )
+            )
+            return
+        # Padding
+        max_artist_name = len(max([t.artist for t in tracks], key=len))
+        max_song_name = len(max([t.title for t in tracks], key=len))
+        index_padding = len(str(len(tracks)))
 
         # Track column headers
         click.echo(
