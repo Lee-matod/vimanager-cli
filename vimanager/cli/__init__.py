@@ -28,4 +28,4 @@ from .inspector import *
 from .sorter import *
 from .spotify import *
 
-__all__ = ("delete", "inspect", "rename", "spotify", "sort")
+__all__ = ("compare", "delete", "inspect", "rename", "spotify", "sort")

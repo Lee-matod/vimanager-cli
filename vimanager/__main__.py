@@ -28,7 +28,7 @@ from __future__ import annotations
 import click
 import colorama
 
-from .cli import delete, inspect, rename, sort
+from .cli import compare, delete, inspect, rename, sort
 
 try:
     from .cli import spotify
@@ -46,6 +46,7 @@ def entrypoint():
     """
 
 
+entrypoint.add_command(compare)
 entrypoint.add_command(inspect)
 entrypoint.add_command(sort)
 entrypoint.add_command(delete)
