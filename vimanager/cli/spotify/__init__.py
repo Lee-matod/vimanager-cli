@@ -56,17 +56,9 @@ _YOUTUBE = f"{Style.BRIGHT}{Fore.RED}[YOUTUBE]{Style.RESET_ALL} "
     help="The name of the configuration file where your client ID and secret are stored.",
 )
 def spotify(
-    playlist_db: click.File,
-    playlist_url: str,
-    *,
-    client_id: str,
-    client_secret: str,
-    config: Optional[click.File],
+    playlist_db: click.File, playlist_url: str, client_id: str, client_secret: str, config: Optional[click.File]
 ):
     """Copy a Spotify playlist and add it to your list.
-
-    This requires a Spotify client ID and secret. For more information, see
-    https://developer.spotify.com/documentation/web-api/concepts/apps.
 
     If provided with a config file, it should be JSON where the key that points to
     the client ID is named 'client_id', and the key that points to the client secret

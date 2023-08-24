@@ -8,7 +8,7 @@ A command-line tool written in Python that enhances the management of your playl
 
 _**NOTE:** This is an unofficial tool that is not maintained nor run by the developers of ViMusic._
 
-Along side with its various other functionalities, one of its key features is allowing you to move your [Spotify](https://open.spotify.com) playlists to ViMusic. To do this, a client ID and client secret are required. For more information, see the [Spotify API](https://developer.spotify.com/documentation/web-api/concepts/apps).  
+Along side with its various other functionalities, one of its key features is allowing you to move your [Spotify](https://open.spotify.com) playlists to ViMusic.  
 _This feature is not natively supported. See [Spotify Support](https://github.com/Lee-matod/vimanager-cli#spotify-support) to install it._
 
 # Installing and updating
