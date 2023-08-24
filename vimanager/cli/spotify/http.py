@@ -41,9 +41,12 @@ if TYPE_CHECKING:
 
 __all__ = ("SpotifyClient",)
 
+HERE = pathlib.Path(__file__).parent
+print(HERE)
+
 
 class SpotifyClient:
-    TOKEN_CACHE: ClassVar[pathlib.Path] = pathlib.Path(".cache")
+    TOKEN_CACHE: ClassVar[pathlib.Path] = HERE / ".cache"
 
     def __init__(self, client_id: str, client_secret: str) -> None:
         self._client_id: str = client_id
@@ -65,10 +68,10 @@ class SpotifyClient:
         tracks = response.json()
         track_items: List[Optional[Spotify]] = list(map(Spotify.from_data, tracks["items"]))
         while tracks["next"]:
-            data = requests.get(tracks["next"]).json()
-            if data is None:
+            tracks = requests.get(tracks["next"], headers={"Authorization": self.token}).json()
+            if tracks is None:
                 break
-            track_items.extend(map(Spotify.from_data, data["items"]))
+            track_items.extend(map(Spotify.from_data, tracks["items"]))
         return [t for t in track_items if t]
 
     @classmethod
@@ -108,7 +111,7 @@ class SpotifyClient:
         token = data["access_token"]
         token_type = data["token_type"]
         expires_in = data["expires_in"] + time.time()
-        with open(".cache", "w+") as fp:
+        with self.TOKEN_CACHE.open("w+") as fp:
             json.dump({"token": token, "expires_in": expires_in, "token_type": token_type}, fp)
         return f"{token_type} {token}"
 
