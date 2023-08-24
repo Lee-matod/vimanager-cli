@@ -42,7 +42,6 @@ if TYPE_CHECKING:
 __all__ = ("SpotifyClient",)
 
 HERE = pathlib.Path(__file__).parent
-print(HERE)
 
 
 class SpotifyClient:
