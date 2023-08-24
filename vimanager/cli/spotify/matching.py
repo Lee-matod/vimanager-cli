@@ -93,12 +93,13 @@ def add_best_match(track: Spotify, scores: List[YouTube], /, tracks: List[Song],
         if len(sorted_scores) > 0:
             best_match = sorted_scores[0]
             if best_match[1] > threshold:
+                minutes, seconds = divmod(best_match[0].duration, 60)
                 tracks.append(
                     Song(
                         best_match[0].video_id,
-                        track.name,
-                        track.artist,
-                        duration=track.duration,
+                        best_match[0].name,
+                        best_match[0].author,
+                        duration=f"{minutes}:{seconds}",
                         thumbnail=track.cover_url or "",
                     )
                 )

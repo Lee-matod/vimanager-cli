@@ -121,12 +121,13 @@ def spotify(
             click.echo(f"    {_YOUTUBE}Retrieved {Fore.RED}{len(results)}{Fore.RESET} results.")
             isrc_result = next((r for r in results if r.url in isrc_urls), None)
             if isrc_result:
+                minutes, seconds = divmod(isrc_result.duration, 60)
                 songs.append(
                     Song(
                         isrc_result.video_id,
-                        track.name,
-                        track.artist,
-                        duration=track.duration,
+                        isrc_result.name,
+                        isrc_result.author,
+                        duration=f"{minutes}:{seconds}",
                         thumbnail=track.cover_url or "",
                     )
                 )
