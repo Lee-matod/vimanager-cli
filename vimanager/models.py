@@ -51,6 +51,19 @@ class Song:
     def __str__(self) -> str:
         return f"{self.artist} - {self.title}"
 
+    def __eq__(self, other: Self) -> bool:
+        return (
+            self.id == other.id
+            and self.title == other.title
+            and self.artist == other.artist
+            and self.duration == other.duration
+            and self.thumbnail_url == other.thumbnail_url
+            and self.liked == other.liked
+        )
+
+    def __ne__(self, other: Self) -> bool:
+        return not self.__eq__(other)
+
     def update(self, *, song_id: Optional[str] = None, **kwargs: Any) -> Self:
         return Song(song_id or self.id, **kwargs)
 
@@ -72,6 +85,12 @@ class Playlist:
 
     def __repr__(self) -> str:
         return f"<Playlist id={self.id!r} name={self.name!r} tracks={len(self._tracks)}>"
+
+    def __eq__(self, other: Self) -> bool:
+        return self.id == other.id and self.name == self.name and len(self._tracks) == len(other._tracks)
+
+    def __ne__(self, other: Self) -> bool:
+        return not self.__eq__(other)
 
     def _update(self, connection: sqlite3.Connection, /) -> None:
         cursor = connection.cursor()
