@@ -26,6 +26,7 @@ DEALINGS IN THE SOFTWARE.
 from __future__ import annotations
 
 import sqlite3
+from string import printable
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 if TYPE_CHECKING:
@@ -64,8 +65,21 @@ class Song:
     def __ne__(self, other: Self) -> bool:
         return not self.__eq__(other)
 
+    def __hash__(self) -> int:
+        i = 0
+        for c in reversed(self.id):
+            i *= len(printable)
+            i += printable.index(c)
+        return i
+
     def update(self, *, song_id: Optional[str] = None, **kwargs: Any) -> Self:
         return Song(song_id or self.id, **kwargs)
+
+    @property
+    def duration_seconds(self) -> int:
+        minutes_str, seconds_str = self.duration.split(":")
+        minutes, seconds = int(minutes_str.strip()), int(seconds_str.strip())
+        return minutes * 60 + seconds
 
     @classmethod
     def from_database(cls, data: Tuple[str, str, str, str, str, Optional[int], str]) -> Self:
