@@ -23,7 +23,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
-from typing import Callable, Optional, Tuple, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 import click
 from colorama import Back, Fore, Style
@@ -32,7 +32,6 @@ from ..models import Playlist
 from ..utils import find_playlist, get_connection
 
 T = TypeVar("T")
-ItemT = TypeVar("ItemT")
 COMPARE_FMT = f"  {Style.BRIGHT}{{0}}:  \t{Fore.RED}{{1}}{Fore.RESET} / {Fore.BLUE}{{2}}{Style.RESET_ALL}"
 VERBOSE_FMT = (
     f"  [{Fore.BLUE}{{0.id}}{Fore.RESET}] {Style.BRIGHT}{{0.title}}"
@@ -129,6 +128,13 @@ def inspect(playlist_db: click.File, playlist_name: Optional[str], mobile: bool)
 @click.argument("playlist2_name", required=False)
 @click.option("--verbose", "-v", is_flag=True, default=False, help="Whether unique and common items should be shown.")
 def compare(playlist_db: click.File, playlist1_name: Optional[str], playlist2_name: Optional[str], verbose: bool):
+    """Compare two playlists.
+    
+    If no playlist names are given, then it will open the database and output
+    all playlists found, prompting a selection.
+
+    Red color corresponds to the first list, while blue represents the second one.
+    """
     conn = get_connection(playlist_db.name)
     cursor = conn.cursor()
     try:
@@ -146,45 +152,40 @@ def compare(playlist_db: click.File, playlist1_name: Optional[str], playlist2_na
             f"vs {Fore.MAGENTA}#{playlist2.id} {Fore.BLUE}{playlist2.name}{Fore.RESET} -*-"
         )
 
-        # TODO: This is a mess. I'll clean it up sometime in the future.
-
         # Track info
         songs1 = set(playlist1.songs)
         songs2 = set(playlist2.songs)
         common_songs = songs1 & songs2
         unique_songs1 = songs1 - songs2
         unique_songs2 = songs2 - songs1
-        liked1, liked2 = compare_items(playlist1.songs, playlist2.songs, lambda i: filter(lambda s: s.liked, i))
-        playtime1, playtime2 = compare_items(playlist1, playlist2, lambda i: sum([s.duration_seconds for s in i.songs]))
-        avg_duration1 = playtime1 / len(playlist1.songs)
-        avg_duration2 = playtime2 / len(playlist2.songs)
+
         click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{Fore.CYAN}{'Tracks':^48}{Style.RESET_ALL}")
+        click.echo(compare_items("Total count", len(songs1), len(songs2)))
+        click.echo(compare_items("Unique songs", len(unique_songs1), len(unique_songs2)))
+        click.echo(f"{Style.BRIGHT}  Common songs:  \t{Fore.YELLOW}{len(common_songs)}{Style.RESET_ALL}")
+        click.echo(compare_items("Liked songs", songs1, songs2, lambda s, _: len(tuple(filter(lambda s: s.liked, s)))))
         click.echo(
-            "\n".join(
-                (
-                    COMPARE_FMT.format("Total count", len(playlist1.songs), len(playlist2.songs)),
-                    COMPARE_FMT.format("Unique songs", len(unique_songs1), len(unique_songs2)),
-                    f"{Style.BRIGHT}  Common songs:  \t{Fore.YELLOW}{len(common_songs)}{Style.RESET_ALL}",
-                    COMPARE_FMT.format("Liked songs", len(tuple(liked1)), len(tuple(liked2))),
-                    COMPARE_FMT.format("Total playtime", largest_unit(playtime1), largest_unit(playtime2)),
-                    COMPARE_FMT.format(
-                        "Avg. song duration",
-                        f"{round(avg_duration1 / 60, 2)}".replace(".", ":"),
-                        f"{round(avg_duration2 / 60, 2)}".replace(".", ":"),
-                    ),
-                )
+            compare_items(
+                "Total playtime", songs1, songs2, lambda s, _: largest_unit(sum((i.duration_seconds for i in s)))
             )
         )
+        click.echo(
+            compare_items(
+                "Avg. song duration",
+                songs1,
+                songs2,
+                lambda s, _: f"{round(sum((i.duration_seconds for i in s)) / len(s)) / 60, 2}".replace(".", ":"),
+            )
+        )
+
         if verbose:
-            if unique_songs1:
-                click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{Fore.RED}{'Unique Tracks':^48}{Style.RESET_ALL}")
-                click.echo("\n".join(map(VERBOSE_FMT.format, unique_songs1)))
-            if unique_songs2:
-                click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{Fore.BLUE}{'Unique Tracks':^48}{Style.RESET_ALL}")
-                click.echo("\n".join(map(VERBOSE_FMT.format, unique_songs2)))
-            if common_songs:
-                click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{Fore.YELLOW}{'Common Tracks':^48}{Style.RESET_ALL}")
-                click.echo("\n".join(map(VERBOSE_FMT.format, common_songs)))
+            for color, category, items in (
+                (Fore.RED, "Unique Tracks", unique_songs1),
+                (Fore.BLUE, "Unique Tracks", unique_songs2),
+                (Fore.YELLOW, "Common Tracks", common_songs),
+            ):
+                click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{color}{category:^48}{Style.RESET_ALL}")
+                click.echo("\n".join(map(VERBOSE_FMT.format, items)))
 
         # Artist info
         artists1 = set(map(lambda s: s.artist, playlist1.songs))
@@ -203,23 +204,22 @@ def compare(playlist_db: click.File, playlist1_name: Optional[str], playlist2_na
             )
         )
         if verbose:
-            if unique_artists1:
-                click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{Fore.RED}{'Unique Artists':^48}{Style.RESET_ALL}")
-                click.echo("\n".join(unique_artists1))
-            if unique_artists2:
-                click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{Fore.BLUE}{'Unique Artists':^48}{Style.RESET_ALL}")
-                click.echo("\n".join(unique_artists2))
-            if common_artists:
-                click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{Fore.YELLOW}{'Common Artists':^48}{Style.RESET_ALL}")
-                click.echo("\n".join(common_artists))
-
+            for color, category, items in (
+                (Fore.RED, "Unique Artists", unique_artists1),
+                (Fore.BLUE, "Unique Artists", unique_artists2),
+                (Fore.YELLOW, "Common Artists", common_artists),
+            ):
+                click.echo(f"\n{Style.BRIGHT}{Back.BLACK}{color}{category:^48}{Style.RESET_ALL}")
+                click.echo("\n".join(items))
     finally:
         cursor.close()
         conn.close()
 
 
-def compare_items(item1: ItemT, item2: ItemT, /, callback: Callable[[ItemT], T]) -> Tuple[T, T]:
-    return callback(item1), callback(item2)
+def compare_items(category: str, item1: T, item2: T, /, callback: Optional[Callable[[T, T], Any]] = None) -> str:
+    if callback is not None:
+        return COMPARE_FMT.format(category, callback(item1, item2), callback(item2, item1))
+    return COMPARE_FMT.format(category, item1, item2)
 
 
 def largest_unit(seconds: int, /) -> str:
