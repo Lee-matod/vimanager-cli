@@ -8,8 +8,8 @@ A command-line tool written in Python that enhances the management of your playl
 
 _**NOTE:** This is an unofficial tool that is not maintained nor run by the developers of ViMusic._
 
-Along side with its various other functionalities, one of its key features is allowing you to move your [Spotify](https://open.spotify.com) playlists to ViMusic.  
-_This feature is not natively supported. See [Spotify Support](https://github.com/Lee-matod/vimanager-cli#spotify-support) to install it._
+Along side with its various other functionalities, a few of its key features are allowing you to move your [Spotify](https://open.spotify.com) playlists to ViMusic, and downloading your playlist tracks to your device.  
+_Due to other dependencies being needed, these features are not natively supported. See [Spotify Support](https://github.com/Lee-matod/vimanager-cli#spotify-support) and [Download Support](https://github.com/Lee-matod/vimanager-cli#download-support) for more information._
 
 # Installing and updating
 
@@ -37,9 +37,23 @@ python3 -m pip install -U git+https://github.com/Lee-matod/vimanager-cli
 python3 -m pip install -U "vimanager-cli[spotify]"
 ```
 
+### Download Support
+
+```sh
+python3 -m pip install -U "vimanager-cli[download]"
+```
+
+_FFmpeg is required for this feature. If you do not have it installed in your device, see below for guidance._
+
+#### Download FFmpeg
+
+- [Windows Tutorial](https://windowsloop.com/install-ffmpeg-windows-10/)
+- **MacOS** - `brew install ffmpeg`
+- **Linux** - `sudo apt install ffmpeg` or whichever package manager you use.
+
 ## Getting your playlists as a database file
 
-To function properly, this tool requires an SQLite database that has your playlists saved in it. You can obtain this file by following the instructions below.
+All of the feature in this tool require a database that has your playlists stored in it. You can easily obtain this file through the ViMusic application thanks to their backup feature. Follow the steps below.
 
 1. Open ViMusic.
 2. Open the Configuration menu.
