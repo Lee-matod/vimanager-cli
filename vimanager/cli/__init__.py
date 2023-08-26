@@ -26,6 +26,14 @@ DEALINGS IN THE SOFTWARE.
 from .edit import *
 from .inspector import *
 from .sorter import *
-from .spotify import *
 
-__all__ = ("compare", "delete", "inspect", "rename", "spotify", "sort")
+__all__ = ("DEFAULT_COMMANDS", "OPTIONAL_COMMANDS")
+
+try:
+    from .spotify import *
+except ImportError:
+    OPTIONAL_COMMANDS = ()  # type: ignore
+else:
+    OPTIONAL_COMMANDS = (spotify,)
+
+DEFAULT_COMMANDS = (compare, delete, inspect, merge, rename, sort)

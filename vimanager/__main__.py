@@ -28,12 +28,7 @@ from __future__ import annotations
 import click
 import colorama
 
-from .cli import compare, delete, inspect, rename, sort
-
-try:
-    from .cli import spotify
-except ImportError:
-    spotify = None
+from .cli import DEFAULT_COMMANDS, OPTIONAL_COMMANDS
 
 colorama.init(autoreset=True)
 
@@ -46,13 +41,8 @@ def entrypoint():
     """
 
 
-entrypoint.add_command(compare)
-entrypoint.add_command(inspect)
-entrypoint.add_command(sort)
-entrypoint.add_command(delete)
-entrypoint.add_command(rename)
-if spotify is not None:
-    entrypoint.add_command(spotify)
+for cmd in (*DEFAULT_COMMANDS, *OPTIONAL_COMMANDS):
+    entrypoint.add_command(cmd)
 
 
 if __name__ == "__main__":
