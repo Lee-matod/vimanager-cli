@@ -29,11 +29,19 @@ from .sorter import *
 
 __all__ = ("DEFAULT_COMMANDS", "OPTIONAL_COMMANDS")
 
+OPTIONAL_COMMANDS = ()
 try:
     from .spotify import *
 except ImportError:
-    OPTIONAL_COMMANDS = ()  # type: ignore
+    pass
 else:
-    OPTIONAL_COMMANDS = (spotify,)
+    OPTIONAL_COMMANDS += (spotify,)  # type: ignore
+
+try:
+    from .download import *
+except ImportError:
+    pass
+else:
+    OPTIONAL_COMMANDS += (download,)  # type: ignore
 
 DEFAULT_COMMANDS = (compare, delete, inspect, merge, rename, sort)
