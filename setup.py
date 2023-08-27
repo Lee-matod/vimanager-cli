@@ -24,6 +24,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 """
 import re
+from itertools import chain
 
 from setuptools import setup
 
@@ -57,6 +58,7 @@ with open("requirements.txt") as file:
 with open("README.md", "r") as file:
     readme = file.read()
 
+extras_require = {"download": ["yt-dlp"], "spotify": ["rapidfuzz", "ytmusicapi"]}
 
 setup(
     name="vimanager-cli",
@@ -70,10 +72,10 @@ setup(
     long_description_content_type="text/markdown",
     include_package_data=True,
     install_requires=requirements,
-    extras_require={"spotify": ["rapidfuzz", "ytmusicapi"], "download": ["yt-dlp"]},
+    extras_require={**extras_require, "full": list(chain(*extras_require.values()))},
     python_requires=">=3.8.0",
     py_modules=["vimanager"],
-    packages=["vimanager", "vimanager/cli", "vimanager/cli/spotify"],
+    packages=["vimanager", "vimanager/cli", "vimanager/cli/spotify", "vimanager/cli/download"],
     entry_points={"console_scripts": ["vimanager = vimanager.__main__:entrypoint"]},
     classifiers=[
         "Intended Audience :: Developers",

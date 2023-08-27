@@ -8,30 +8,41 @@ A command-line tool written in Python that enhances the management of your playl
 
 _**NOTE:** This is an unofficial tool that is not maintained nor run by the developers of ViMusic._
 
-Along side with its various other functionalities, a few of its key features are allowing you to move your [Spotify](https://open.spotify.com) playlists to ViMusic, and downloading your playlist tracks to your device.  
-_Due to other dependencies being needed, these features are not natively supported. See [Spotify Support](https://github.com/Lee-matod/vimanager-cli#spotify-support) and [Download Support](https://github.com/Lee-matod/vimanager-cli#download-support) for more information._
+Along side with its various other functionalities, a few of its key features are allowing you to move your [Spotify](https://open.spotify.com) playlists to ViMusic, and downloading your playlist tracks to your device.
+
+_Due to other dependencies being needed, these features are not natively supported. See [All features](https://github.com/Lee-matod/vimanager-cli#all-features) for more information._
 
 # Installing and updating
 
-Python 3.8 or higher is required. Depending on the version you wish to install, run the following command.
+Python 3.8 or higher is required. Depending on the version you wish to install, run the appropriate command.
 
 Once installed, run `vimanager --help` for a help menu and more information on how to use the playlist manager.
 
 > Note that on some systems, you might have to replace `python3` with `py -3`.
 
-### Stable
+## Stable
 
 ```sh
 python3 -m pip install -U vimanager-cli
 ```
 
-### Development
+## Development
 
 ```sh
 python3 -m pip install -U git+https://github.com/Lee-matod/vimanager-cli
 ```
 
+## All features
+
+Installing using this command includes the optional features listed below, which can also be installed seperatly.
+
+```sh
+python3 -m pip install -U "vimanager-cli[full]"
+```
+
 ### Spotify Support
+
+Copy your playlists from Spotify to ViMusic.
 
 ```sh
 python3 -m pip install -U "vimanager-cli[spotify]"
@@ -39,13 +50,15 @@ python3 -m pip install -U "vimanager-cli[spotify]"
 
 ### Download Support
 
+Download the tracks in your playlist to your device.
+
 ```sh
 python3 -m pip install -U "vimanager-cli[download]"
 ```
 
-_FFmpeg is required for this feature. If you do not have it installed in your device, see below for guidance._
+> _FFmpeg is required for this feature. If you do not have it installed on your device, see below for guidance._
 
-#### Download FFmpeg
+#### Downloading FFmpeg
 
 - [Windows Tutorial](https://windowsloop.com/install-ffmpeg-windows-10/)
 - **MacOS** - `brew install ffmpeg`
