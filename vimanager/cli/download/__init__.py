@@ -36,6 +36,7 @@ from vimanager.models import Playlist
 from vimanager.utils import find_playlist, get_connection
 
 from .ffmpeg import convert
+from .metadata import embed_metadata
 
 
 @click.command()
@@ -46,7 +47,7 @@ from .ffmpeg import convert
     "-a",
     type=click.Choice(["flac", "m4a", "mp3", "ogg", "opus", "wav"]),
     default="mp3",
-    help="The audio format in which",
+    help="The audio format in which the downloaded song should be saved.",
 )
 @click.option("--output-dir", "-o", help="Directory where downloaded songs will be saved.")
 def download(
@@ -117,8 +118,11 @@ def download(
                 f"{Fore.MAGENTA}{audio_format}{Fore.RESET}"
             )
             temp_file = tmpdir / f"{data['id']}.{data['ext']}"
-            success = convert(temp_file, output_folder / f"{track.title} - {track.artist}.{audio_format}", audio_format)
+            output_file = output_folder / f"{track.title} - {track.artist}.{audio_format}"
+            success = convert(temp_file, output_file, audio_format)
             if success:
+                click.echo(f"  {Style.DIM}Embedding basic metadata to file.")
+                embed_metadata(output_file, track)
                 click.echo(f"  {Back.GREEN}Successfully downloaded track.{Back.RESET}")
             else:
                 click.echo(f"  {Back.RED}Converting file failed.{Back.RESET}")
